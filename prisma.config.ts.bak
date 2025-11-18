@@ -1,0 +1,16 @@
+// prisma.config.ts
+
+// 1) Load .env into process.env
+import "dotenv/config";
+
+// 2) Import Prisma's config helper
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+  },
+  engine: "classic",
+ 
+});

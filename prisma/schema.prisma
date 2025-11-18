@@ -1,0 +1,133 @@
+// prisma/schema.prisma
+// ANATA — Postgres + Prisma data model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// Enums
+//
+enum CollaboratorRole {
+  OWNER    // optional if you also keep ownerId on Board; included for flexibility
+  EDITOR
+  VIEWER
+}
+
+enum AssetKind {
+  image
+  thumb
+  pdf
+  json
+  other
+}
+
+//
+// Models
+//
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  boardsOwned   Board[]        @relation("UserBoards")
+  collaborations Collaborator[]
+  operations    Operation[]
+}
+
+model Board {
+  id            String           @id @default(uuid())
+  title         String
+  ownerId       String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Ordered list of page IDs for fast UI ordering
+  pageOrder     String[]         @default([])
+
+  // Relations
+  owner         User             @relation("UserBoards", fields: [ownerId], references: [id], onDelete: Cascade)
+  pages         Page[]
+  collaborators Collaborator[]
+  assets        Asset[]
+
+  @@index([ownerId])
+  @@index([updatedAt])
+}
+
+model Collaborator {
+  boardId String
+  userId  String
+  role    CollaboratorRole
+
+  // Relations
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([boardId, userId])
+  @@index([userId])
+}
+
+model Page {
+  id        String   @id @default(uuid())
+  boardId   String
+  name      String   @default("Page")
+  width     Int      @default(1920)
+  height    Int      @default(1080)
+
+  // Domain JSON (layers, shapes, comments, etc.)
+  content   Json     @default("{}")
+
+  // Optimistic concurrency control: increment per successful write
+  version   Int      @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  operations Operation[]
+
+  @@index([boardId])
+  @@index([boardId, updatedAt])
+}
+
+model Operation {
+  id        String   @id @default(uuid())
+  pageId    String
+  userId    String?  // nullable to allow system ops
+  patches   Json     // [{op, path, value?, oldValue?}]
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  // Relations
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([pageId, createdAt])
+  @@index([userId])
+}
+
+model Asset {
+  id        String    @id @default(uuid())
+  boardId   String
+  url       String
+  kind      AssetKind @default(image)
+  bytes     Int
+  createdAt DateTime  @default(now())
+
+  // Relations
+  board     Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([kind, createdAt])
+}
