@@ -1,31 +1,37 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+// Helper type for Next.js 15 params
+type Props = { params: Promise<{ id: string }> };
+
+export async function GET(_: Request, { params }: Props) {
+  const { id } = await params; // Fix
   const page = await prisma.page.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: { id: true, boardId: true, name: true, width: true, height: true, content: true, version: true, updatedAt: true }
   });
   if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(page);
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const page = await prisma.page.findUnique({ where: { id: params.id } });
+export async function DELETE(_: Request, { params }: Props) {
+  const { id } = await params; // Fix
+  const page = await prisma.page.findUnique({ where: { id } });
   if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  
-  await prisma.page.delete({ where: { id: params.id } });
+   
+  await prisma.page.delete({ where: { id } });
   return NextResponse.json({ message: "Page deleted" }, { status: 200 });
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: Props) {
+  const { id } = await params; // Fix
   const body = await req.json();
   const { name, width, height, content } = body;
-  
-  const page = await prisma.page.findUnique({ where: { id: params.id } });
+   
+  const page = await prisma.page.findUnique({ where: { id } });
   if (!page) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const updatedPage = await prisma.page.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       name: name ?? page.name,
       width: width ?? page.width,
@@ -35,6 +41,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     },
     select: { id: true, boardId: true, name: true, width: true, height: true, content: true, version: true, updatedAt: true }
   });
-  
+   
   return NextResponse.json(updatedPage);
 }
