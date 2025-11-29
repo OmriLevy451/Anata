@@ -13,12 +13,10 @@ export default function Home() {
   const [selectedUserId, setSelectedUserId] = useState("");
 
   const loadData = async () => {
-    // Load Users
     const uRes = await fetch("/api/users?limit=50");
     const uData = await uRes.json();
     setUsers(uData.data || []);
     
-    // Load Boards
     const bRes = await fetch("/api/boards");
     const bData = await bRes.json();
     setBoards(bData || []);
@@ -26,7 +24,6 @@ export default function Home() {
 
   useEffect(() => { loadData(); }, []);
 
-  // 1. Create User
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if(!userEmail) return alert("Email required");
@@ -38,19 +35,17 @@ export default function Home() {
     
     if(res.ok) {
       setUserName(""); setUserEmail("");
-      loadData(); // Refresh list
+      loadData(); 
     } else {
       const err = await res.json();
       alert("Error: " + err.error);
     }
   };
 
-  // 2. Create Board (And automatically a Page)
   const handleCreateBoard = async (e: React.FormEvent) => {
     e.preventDefault();
     if(!selectedUserId || !boardTitle) return alert("User and Title required");
 
-    // A. Create Board
     const bRes = await fetch("/api/boards", {
       method: "POST",
       body: JSON.stringify({ title: boardTitle, ownerId: selectedUserId })
@@ -58,7 +53,7 @@ export default function Home() {
     const newBoard = await bRes.json();
 
     if(bRes.ok) {
-      // B. Create a Page for this board immediately so we can draw
+      // Create default page automatically
       await fetch("/api/pages", {
         method: "POST",
         body: JSON.stringify({ boardId: newBoard.id, name: "Page 1" })
@@ -75,9 +70,12 @@ export default function Home() {
     <main className="min-h-screen p-8 max-w-6xl mx-auto space-y-12">
       
       {/* HEADER */}
-      <header className="border-b pb-4">
-        <h1 className="text-4xl font-bold text-gray-900">Anata Whiteboard</h1>
-        <p className="text-gray-500">Fabric.js + Next.js + Postgres</p>
+      <header className="border-b border-black/10 pb-4">
+        <h1 className="text-5xl font-extrabold text-black tracking-tight">ANATA</h1>
+        {/* 4. Guide text: Dark Grey + Italic */}
+        <p className="text-gray-800 italic mt-2 text-lg">
+          The collaborative whiteboard.
+        </p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -85,32 +83,36 @@ export default function Home() {
         {/* LEFT COLUMN: ACTIONS */}
         <div className="space-y-8">
           
-          {/* CREATE USER FORM */}
-          <section className="bg-white p-6 rounded-xl shadow-sm border">
-            <h2 className="text-xl font-bold mb-4">1. Create User</h2>
+          {/* CREATE USER CARD */}
+          <section className="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
+            <h2 className="text-xl font-bold mb-1 text-black">1. Create User</h2>
+            <p className="text-gray-600 italic text-sm mb-4">Start by creating a persona.</p>
+            
             <form onSubmit={handleCreateUser} className="space-y-3">
               <input 
-                className="w-full p-2 border rounded" 
-                placeholder="Name (e.g. John Doe)"
+                className="w-full p-2 border-2 border-gray-200 rounded focus:border-black outline-none transition" 
+                placeholder="Name (e.g. Omri)"
                 value={userName} onChange={e => setUserName(e.target.value)}
               />
               <input 
-                className="w-full p-2 border rounded" 
-                placeholder="Email (e.g. john@test.com)"
+                className="w-full p-2 border-2 border-gray-200 rounded focus:border-black outline-none transition" 
+                placeholder="Email (e.g. omri@anata.com)"
                 value={userEmail} onChange={e => setUserEmail(e.target.value)}
               />
-              <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+              <button className="w-full bg-black text-white font-bold p-2 rounded hover:bg-gray-800 transition">
                 Create User
               </button>
             </form>
           </section>
 
-          {/* CREATE BOARD FORM */}
-          <section className="bg-white p-6 rounded-xl shadow-sm border">
-            <h2 className="text-xl font-bold mb-4">2. Create Board</h2>
+          {/* CREATE BOARD CARD */}
+          <section className="bg-white p-6 rounded-xl shadow-lg border-2 border-black">
+            <h2 className="text-xl font-bold mb-1 text-black">2. Create Board</h2>
+            <p className="text-gray-600 italic text-sm mb-4">Assign a board to a user.</p>
+
             <form onSubmit={handleCreateBoard} className="space-y-3">
               <select 
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border-2 border-gray-200 rounded focus:border-black outline-none"
                 value={selectedUserId} 
                 onChange={e => setSelectedUserId(e.target.value)}
               >
@@ -120,13 +122,13 @@ export default function Home() {
                 ))}
               </select>
               <input 
-                className="w-full p-2 border rounded" 
+                className="w-full p-2 border-2 border-gray-200 rounded focus:border-black outline-none" 
                 placeholder="Board Title"
                 value={boardTitle} onChange={e => setBoardTitle(e.target.value)}
               />
               <button 
                 disabled={!selectedUserId}
-                className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 disabled:opacity-50"
+                className="w-full bg-black text-white font-bold p-2 rounded hover:bg-gray-800 disabled:opacity-50 transition"
               >
                 Create Board
               </button>
@@ -137,22 +139,26 @@ export default function Home() {
         {/* RIGHT COLUMN: LIST */}
         <div className="space-y-8">
           <section>
-            <h2 className="text-xl font-bold mb-4">Your Boards</h2>
+            <h2 className="text-2xl font-bold mb-4 text-black">Your Boards</h2>
             <div className="grid gap-4">
               {boards.map(board => (
                 <Link 
                   key={board.id} 
                   href={`/boards/${board.id}`}
-                  className="block p-4 bg-white border rounded hover:border-blue-500 transition shadow-sm hover:shadow-md"
+                  className="block p-5 bg-white border-2 border-black rounded-lg hover:translate-x-1 hover:-translate-y-1 hover:shadow-xl transition-all duration-200"
                 >
-                  <div className="font-bold text-lg">{board.title}</div>
-                  <div className="text-xs text-gray-400">ID: {board.id}</div>
-                  <div className="text-sm text-gray-500 mt-2">
-                    Click to view canvas →
+                  <div className="font-bold text-xl text-black">{board.title}</div>
+                  <div className="text-xs text-gray-500 italic mt-1">ID: {board.id}</div>
+                  <div className="text-sm text-gray-800 italic mt-3">
+                    Click to open canvas &rarr;
                   </div>
                 </Link>
               ))}
-              {boards.length === 0 && <p className="text-gray-400">No boards found.</p>}
+              {boards.length === 0 && (
+                <p className="text-black italic bg-white/50 p-4 rounded">
+                  No boards found. Create one on the left!
+                </p>
+              )}
             </div>
           </section>
         </div>

@@ -9,6 +9,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "boardId is required" }, { status: 400 });
   }
 
+  // 1. Define the Default Content Structure
+  const defaultLayerId = "layer-1";
+  const now = Date.now();
+
+  const initialContent = {
+    shapes: {},
+    layers: {
+      [defaultLayerId]: {
+        id: defaultLayerId,
+        pageId: "placeholder", // Will be correct in context, technically redundant inside JSON blob
+        name: "Layer 1",
+        visible: true,
+        locked: false,
+        objectIds: [], // Empty list of shapes
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+  };
+
   const page = await prisma.$transaction(async (tx) => {
     const created = await tx.page.create({
       data: {
@@ -16,7 +36,8 @@ export async function POST(req: NextRequest) {
         name: name ?? "Page 1",
         width,
         height,
-        content: {},
+        // 2. Use the initialContent instead of empty object
+        content: initialContent, 
         version: 1,
       },
       select: {
